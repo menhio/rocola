@@ -32,3 +32,13 @@
 [20-May-2017 20:03:02 America/Mazatlan] PHP Fatal error:  Call to undefined method SpotifyWebAPI\Session::getUserPlaylists() in /home/mazpes5/public_html/rocola/sites/all/modules/rocola_core/rocola_core.module on line 114
 [20-May-2017 20:03:48 America/Mazatlan] PHP Fatal error:  Call to undefined method SpotifyWebAPI\Session::getUserPlaylists() in /home/mazpes5/public_html/rocola/sites/all/modules/rocola_core/rocola_core.module on line 114
 [20-May-2017 20:05:59 America/Mazatlan] PHP Fatal error:  Call to undefined method SpotifyWebAPI\SpotifyWebAPI::getClientId() in /home/mazpes5/public_html/rocola/sites/all/modules/rocola_core/rocola_core.module on line 109
+[21-May-2017 00:23:47 America/Mazatlan] PHP Fatal error:  Call to a member function getCode() on null in /home/mazpes5/public_html/rocola/sites/all/modules/rocola_core/rocola_core.module on line 205
+[21-May-2017 01:01:25 America/Mazatlan] PHP Fatal error:  Call to a member function getStatusCode() on null in /home/mazpes5/public_html/rocola/sites/all/modules/rocola_core/rocola_core.module on line 182
+[21-May-2017 08:41:18 America/Mazatlan] PHP Fatal error:  Call to undefined method Audeio\Spotify\API::addUserPlaylistTracks() in /home/mazpes5/public_html/rocola/sites/all/modules/rocola_core/rocola_core.module on line 228
+[21-May-2017 08:42:53 America/Mazatlan] PHP Fatal error:  Call to undefined method Audeio\Spotify\API::addUserPlaylistTracks() in /home/mazpes5/public_html/rocola/sites/all/modules/rocola_core/rocola_core.module on line 229
+[21-May-2017 08:44:16 America/Mazatlan] PHP Fatal error:  Call to undefined method Audeio\Spotify\API::addUserPlaylistTracks() in /home/mazpes5/public_html/rocola/sites/all/modules/rocola_core/rocola_core.module on line 228
+[21-May-2017 12:26:17 America/Mazatlan] PHP Fatal error:  Call to undefined function printr() in /home/mazpes5/public_html/rocola/sites/all/modules/rocola_core/rocola_core.module on line 207
+[23-May-2017 20:29:59 America/Mazatlan] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in /home/mazpes5/public_html/rocola/sites/all/modules/rocola_core/rocola_core.module on line 238
+[23-May-2017 20:30:26 America/Mazatlan] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in /home/mazpes5/public_html/rocola/sites/all/modules/rocola_core/rocola_core.module on line 238
+[23-May-2017 20:31:38 America/Mazatlan] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in /home/mazpes5/public_html/rocola/sites/all/modules/rocola_core/rocola_core.module on line 236
+[23-May-2017 20:46:24 America/Mazatlan] PHP Parse error:  syntax error, unexpected ')' in /home/mazpes5/public_html/rocola/sites/all/modules/rocola_core/rocola_core.module on line 244

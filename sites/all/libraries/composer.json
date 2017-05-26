@@ -1,5 +1,7 @@
 {
     "require": {
-        "jwilsson/spotify-web-api-php": "^1.10"
+        "jwilsson/spotify-web-api-php": "^1.10",
+        "guzzlehttp/guzzle": "~6.0",
+        "audeio/spotify-web-api": "0.*"
     }
 }

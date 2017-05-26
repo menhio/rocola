@@ -1,27 +1,6 @@
 <?php
 
-/*
- * Implements hook_init()
- */
-
-//function rocola_core_init() {
-//  require '/home/mazpes5/www/rocola/sites/all/libraries/vendor/autoload.php';
-//
-//  $api = new SpotifyWebAPI\Session(
-//      'cf9abaf802f247c3b192135c12115b23', 
-//      '54ed0d23207e473b9de9d4dfc2a7c720'
-//  );
-//
-//  //global $api;
-//  //$session = new SpotifyWebAPI\SpotifyWebAPI();
-//
-//  $api->requestCredentialsToken();
-//  $accessToken = $api->getAccessToken();
-//  
-//  print_r($api->getClientId());
-//  header('Location: http://www.mazpesca.com/rocola/spotify/playlist');
-//  //die();
-//}
+require '/home/mazpes5/www/rocola/sites/all/libraries/vendor/autoload.php';
 
 /*
  * Implements hook_menu()
@@ -35,7 +14,22 @@ function rocola_core_menu() {
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
+  
+  $items['spotify/auth'] = array(
+    'title' => 'La Mona Jukebox - Auth',
+    'page callback' => 'auth_page',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
 
+  $items['spotify/playlist/queue/%/%'] = array(
+    'title' => 'La Mona Rocks',
+    'description' => 'Your song has been successfully queued',
+    'page callback' => 'queue_page',
+    'page arguments' => array(3, 4, 5),
+    'access arguments' => array('access content'),
+  );
+  
   $items['admin/config/rocola/manage'] = array(
     'title' => 'My Rocola Settings',
     'description' => 'Manage My Rocola Settings',
@@ -75,21 +69,21 @@ function rocola_core_form($form, &$form_state){
   
   $form['user_id'] = array(
     '#title' => t('USER ID'),
-    '#description' => t('Use your User ID.'),
+    '#description' => t('The Spotify User ID.'),
     '#type' => 'textfield',
     '#default_value' => variable_get('spotify_user_id' ,''),
   );
   
   $form['playlist_id_selection'] = array(
     '#title' => t('Playlist Selection'),
-    '#description' => t('Use the playlist for selection.'),
+    '#description' => t('The Playlist ID for selection.'),
     '#type' => 'textfield',
     '#default_value' => variable_get('spotify_playlist_id_selection' ,''),
   );
   
   $form['playlist_id_queue'] = array(
     '#title' => t('Playlist Queue'),
-    '#description' => t('Use the playlist for playing.'),
+    '#description' => t('The Playlist ID for playing.'),
     '#type' => 'textfield',
     '#default_value' => variable_get('spotify_playlist_id_queue' ,''),
   );
@@ -111,6 +105,51 @@ function rocola_core_form_submit($form, &$form_state) {
   variable_set('spotify_playlist_id_queue', $form_state['values']['playlist_id_queue']);
   
   drupal_set_message(t('Your configuration has been saved.'));
+  
+  $client_id = variable_get('spotify_client_id');
+  $client_secret = variable_get('spotify_client_secret');
+  
+  $session = new SpotifyWebAPI\Session(
+      $client_id, $client_secret, 'http://mazpesca.com/rocola/spotify/auth'
+  );
+
+  $options = [
+    'scope' => [
+      'playlist-read-private',
+      'user-read-private',
+      'playlist-modify-private',
+      'playlist-modify-public',
+    ],
+  ];
+
+  header('Location: ' . $session->getAuthorizeUrl($options));
+  die();
+  
+}
+
+function  auth_page() {
+  
+  $client_id = variable_get('spotify_client_id');
+  $client_secret = variable_get('spotify_client_secret');
+  
+  $session = new SpotifyWebAPI\Session($client_id, 
+      $client_secret, 
+      'http://mazpesca.com/rocola/spotify/auth');
+  $api = new SpotifyWebAPI\SpotifyWebAPI();
+
+  // Request a access token using the code from Spotify
+  $session->requestAccessToken($_GET['code']);
+  $accessToken = $session->getAccessToken();
+  variable_set('spotify_token', $accessToken);
+  
+  // Set the access token on the API wrapper
+  $api->setAccessToken($accessToken);
+
+  $output = '';
+  
+  $output .= '<p>Clients can start adding some tracks!</p>';
+  
+  return $output;
 }
 
 function playlist_page() {
@@ -123,31 +162,43 @@ function playlist_page() {
   $client_secret = variable_get('spotify_client_secret');
   $user_id = variable_get('spotify_user_id');
   $playlist_id_selection = variable_get('spotify_playlist_id_selection');
+  $playlist_id_queue = variable_get('spotify_playlist_id_queue');
+  $spotify_token = variable_get('spotify_token');
   
-  require '/home/mazpes5/www/rocola/sites/all/libraries/vendor/autoload.php';
-  
+  /*
+   * API SETTINGS
+   */
   $session = new SpotifyWebAPI\Session($client_id, $client_secret);
   $api = new SpotifyWebAPI\SpotifyWebAPI();
   
   $session->requestCredentialsToken();
   $accessToken = $session->getAccessToken();
   $api->setAccessToken($accessToken);
-  // user id 1295210986
-  //playlist id 2yXxrkr6EyAA1MNPEDfSnf
+  
   $playlistTracks = $api->getUserPlaylistTracks($user_id, $playlist_id_selection);
+  /*
+   * API SETTING END
+   */
   $output .= '<table class="table table-hover">';
   $output .= '<tbody>';
   
   foreach ($playlistTracks->items as $track) {
     $track = $track->track;
-    
+    $artist_name = $track->artists[0]->name;
+    $track_name = $track->name;
+    $track_id = $track->id;
+    $album_img = $track->album->images[0]->url;
     $output .= '<tr>';
     $output .= '<td>';
-    $output .= '<a href="' . $track->external_urls->spotify . '">' . 
-        '<img src="' . $track->album->images[0]->url .'" class="img-responsive img-thumbnail" '
-        . 'alt="" height="204" width="136"> ' . $track->artists[0]->name . ' - ' 
-        . $track->name . ' - ' . $track->id . '</a>';
-    //print_r($track->album->images[0]->url);
+    $output .= '<h6>';
+    $output .= '<a href="' . 'spotify/playlist/queue/' . $user_id . '/' 
+        . $playlist_id_queue . '/' . $track_id . '">'; 
+    $output .= '<img src="' . $album_img . 
+        '" class="img-responsive img-thumbnail" '
+        . 'alt="" height="204" width="136"> ';
+    $output .= $artist_name . ' - ' . $track_name;
+    $output .= '</a>';
+    $output .= '</h6>';
     $output .= '</td>';
     $output .= '</tr>';
   }
@@ -156,4 +207,54 @@ function playlist_page() {
   
   return $output;
   
+}
+
+
+function queue_page($user_id, $playlist_id, $track_id) {
+  $output = '';
+  
+  $client_id = variable_get('spotify_client_id');
+  $client_secret = variable_get('spotify_client_secret');
+  $user_id = variable_get('spotify_user_id');
+  $playlist_id_selection = variable_get('spotify_playlist_id_selection');
+  $playlist_id_queue = variable_get('spotify_playlist_id_queue');
+  $spotify_token = variable_get('spotify_token');
+  
+  /*
+   * API SETTINGS
+   */
+  $api2 = new \Audeio\Spotify\API();
+  $song = $api2->getTrack($track_id);
+  
+  $session = new SpotifyWebAPI\Session($client_id, $client_secret);
+  $api = new SpotifyWebAPI\SpotifyWebAPI();
+  
+  try {
+    $api->setAccessToken($spotify_token);
+    $playlistTracks = $api->getUserPlaylistTracks($user_id, $playlist_id);
+    $track_num = $playlistTracks->total + 1;
+  } catch (Exception $ex) {
+    $output .= '<h4>' . 'Ask La Mona to generate a new token!</h4>';
+  }
+  
+  try {
+    $track = $api->addUserPlaylistTracks(
+        $user_id, 
+        $playlist_id, 
+        [$track_id]);
+    $output .= '<h2>You Rock Too!</h2>';
+    $output .= '<p>';
+    $output .= 'The song ' . $song . ' has been submitted.';
+    $output .= '</p>';
+    $output .= '<p>';
+    $output .= 'Your song is number ' . $track_num . ' .';
+    $output .= '</p>';
+  } catch (Exception $e) {
+    $output .= '<h4>' . 'API Error: ' . $e->getCode() . '</h4>';
+  }
+  /*
+   * API SETTING END
+   */
+  
+  return $output;
 }

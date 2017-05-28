@@ -154,9 +154,12 @@ function  auth_page() {
 
 function playlist_page() {
   
-  $output = '';
+//  $output = '';
+//  
+//  $output .= '<h1>La Mona Rocks</h1>';
   
-  $output .= '<h1>La Mona Rocks</h1>';
+  angularjs_init_application('app');
+  drupal_add_js(drupal_get_path('module', 'rocola_core') . '/js/app.js');
   
   $client_id = variable_get('spotify_client_id');
   $client_secret = variable_get('spotify_client_secret');
@@ -179,36 +182,66 @@ function playlist_page() {
   /*
    * API SETTING END
    */
-  $output .= '<table class="table table-hover">';
-  $output .= '<tbody>';
-  
+//  $output .= '<table class="table table-hover">';
+//  $output .= '<tbody>';
+  $tracks = array();
   foreach ($playlistTracks->items as $track) {
     $track = $track->track;
     $artist_name = $track->artists[0]->name;
     $track_name = $track->name;
     $track_id = $track->id;
     $album_img = $track->album->images[0]->url;
-    $output .= '<tr>';
-    $output .= '<td>';
-    $output .= '<h6>';
-    $output .= '<a href="' . 'spotify/playlist/queue/' . $user_id . '/' 
-        . $playlist_id_queue . '/' . $track_id . '">'; 
-    $output .= '<img src="' . $album_img . 
-        '" class="img-responsive img-thumbnail" '
-        . 'alt="" height="204" width="136"> ';
-    $output .= $artist_name . ' - ' . $track_name;
-    $output .= '</a>';
-    $output .= '</h6>';
-    $output .= '</td>';
-    $output .= '</tr>';
+//    $output .= '<tr>';
+//    $output .= '<td>';
+//    $output .= '<h6>';
+//    $output .= '<a href="' . 'spotify/playlist/queue/' . $user_id . '/' 
+//        . $playlist_id_queue . '/' . $track_id . '">'; 
+//    $output .= '<img src="' . $album_img . 
+//        '" class="img-responsive img-thumbnail" '
+//        . 'alt="" height="204" width="136"> ';
+//    $output .= $artist_name . ' - ' . $track_name;
+//    $output .= '</a>';
+//    $output .= '</h6>';
+//    $output .= '</td>';
+//    $output .= '</tr>';
+    $tracks[] = array(
+      'track_id' => $track_id,
+      'track' => $track,
+      'track_name' => $track_name,
+      'artist_name' => $artist_name,
+      'album_img' => $album_img,
+      'playlist_id_queue' => $playlist_id_queue,
+      'user_id' => $user_id,
+    );
   }
-  $output .= '</tbody>';
-  $output .= '</table>';
+//  $output .= '</tbody>';
+//  $output .= '</table>';
   
-  return $output;
+  drupal_add_js(array(
+    'rocola_core' => array(
+      'tracks' => $tracks,
+    )
+  ), 'setting');
+  
+  drupal_add_js(drupal_get_path('module', 'rocola_core') . '/js/trackController.js');
+
+  return theme('rocola_tracks_page');
+  
+  //return $output;
   
 }
 
+/**
+ * Implements hook_theme().
+ */
+function rocola_core_theme() {
+  return array(
+    'rocola_tracks_page' => array(
+      'template' => '/theme/rocola-tracks-page',
+      //'parameters' => array(),
+    ),
+  );
+}
 
 function queue_page($user_id, $playlist_id, $track_id) {
   $output = '';

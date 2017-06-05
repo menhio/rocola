@@ -1,4 +1,5 @@
 name = Rocola Core
 description = Rocola Core Files
 core = 7.x
+dependencies[] = entity
 package = Rocola

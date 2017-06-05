@@ -136,15 +136,19 @@ function  auth_page() {
       $client_secret, 
       'http://mazpesca.com/rocola/spotify/auth');
   $api = new SpotifyWebAPI\SpotifyWebAPI();
-
-  // Request a access token using the code from Spotify
-  $session->requestAccessToken($_GET['code']);
-  $accessToken = $session->getAccessToken();
-  variable_set('spotify_token', $accessToken);
   
-  // Set the access token on the API wrapper
-  $api->setAccessToken($accessToken);
-
+  try {
+    // Request a access token using the code from Spotify
+    $session->requestAccessToken($_GET['code']);
+    $accessToken = $session->getAccessToken();
+    variable_set('spotify_token', $accessToken);
+  
+    // Set the access token on the API wrapper
+    $api->setAccessToken($accessToken);
+  } catch (Exception $ex) {
+    $output .= '<h4>' . 'Oops!</h4>';
+  }
+  
   $output = '';
   
   $output .= '<p>Clients can start adding some tracks!</p>';
@@ -174,16 +178,18 @@ function playlist_page() {
   $session = new SpotifyWebAPI\Session($client_id, $client_secret);
   $api = new SpotifyWebAPI\SpotifyWebAPI();
   
-  $session->requestCredentialsToken();
-  $accessToken = $session->getAccessToken();
-  $api->setAccessToken($accessToken);
+  try {
+    $session->requestCredentialsToken();
+    $accessToken = $session->getAccessToken();
+    $api->setAccessToken($accessToken);
+  } catch (Exception $ex) {
+    $output .= '<h4>' . 'Oops!</h4>';
+  }
   
   $playlistTracks = $api->getUserPlaylistTracks($user_id, $playlist_id_selection);
-  /*
-   * API SETTING END
-   */
-//  $output .= '<table class="table table-hover">';
-//  $output .= '<tbody>';
+ /*
+  * Putting up the array for AngularJS
+  */
   $tracks = array();
   foreach ($playlistTracks->items as $track) {
     $track = $track->track;
@@ -191,19 +197,6 @@ function playlist_page() {
     $track_name = $track->name;
     $track_id = $track->id;
     $album_img = $track->album->images[0]->url;
-//    $output .= '<tr>';
-//    $output .= '<td>';
-//    $output .= '<h6>';
-//    $output .= '<a href="' . 'spotify/playlist/queue/' . $user_id . '/' 
-//        . $playlist_id_queue . '/' . $track_id . '">'; 
-//    $output .= '<img src="' . $album_img . 
-//        '" class="img-responsive img-thumbnail" '
-//        . 'alt="" height="204" width="136"> ';
-//    $output .= $artist_name . ' - ' . $track_name;
-//    $output .= '</a>';
-//    $output .= '</h6>';
-//    $output .= '</td>';
-//    $output .= '</tr>';
     $tracks[] = array(
       'track_id' => $track_id,
       'track' => $track,
@@ -214,8 +207,6 @@ function playlist_page() {
       'user_id' => $user_id,
     );
   }
-//  $output .= '</tbody>';
-//  $output .= '</table>';
   
   drupal_add_js(array(
     'rocola_core' => array(
@@ -226,9 +217,6 @@ function playlist_page() {
   drupal_add_js(drupal_get_path('module', 'rocola_core') . '/js/trackController.js');
 
   return theme('rocola_tracks_page');
-  
-  //return $output;
-  
 }
 
 /**
@@ -238,27 +226,22 @@ function rocola_core_theme() {
   return array(
     'rocola_tracks_page' => array(
       'template' => '/theme/rocola-tracks-page',
-      //'parameters' => array(),
     ),
   );
 }
 
 function queue_page($user_id, $playlist_id, $track_id) {
   $output = '';
-  
+  global $user;
+  $dr_user_id = $user->uid;
+  $today = date('Y-m-d H:i:s');
   $client_id = variable_get('spotify_client_id');
   $client_secret = variable_get('spotify_client_secret');
   $user_id = variable_get('spotify_user_id');
   $playlist_id_selection = variable_get('spotify_playlist_id_selection');
   $playlist_id_queue = variable_get('spotify_playlist_id_queue');
   $spotify_token = variable_get('spotify_token');
-  
-  /*
-   * API SETTINGS
-   */
-  $api2 = new \Audeio\Spotify\API();
-  $song = $api2->getTrack($track_id);
-  
+ 
   $session = new SpotifyWebAPI\Session($client_id, $client_secret);
   $api = new SpotifyWebAPI\SpotifyWebAPI();
   
@@ -266,28 +249,55 @@ function queue_page($user_id, $playlist_id, $track_id) {
     $api->setAccessToken($spotify_token);
     $playlistTracks = $api->getUserPlaylistTracks($user_id, $playlist_id);
     $track_num = $playlistTracks->total + 1;
+    $song = $api->getTrack($track_id);
+    
   } catch (Exception $ex) {
     $output .= '<h4>' . 'Ask La Mona to generate a new token!</h4>';
   }
   
+  /*
+   * User must be able to only add a song every certain minutes
+   * Code goes here
+   */
   try {
     $track = $api->addUserPlaylistTracks(
         $user_id, 
         $playlist_id, 
         [$track_id]);
+    
+    /*
+     * Log the Track
+     */
+    $values = array(
+      'type' => 'tracks',
+      'uid' => $dr_user_id,
+      'status' => 1,
+      'comment' => 0,
+      'promote' => 0,
+    );
+    $new_node = entity_create('node', $values);
+
+    $new_entity = entity_metadata_wrapper('node', $new_node);
+    $new_entity->field_fecha_track = strtotime($today);
+    $new_entity->field_user_track = $dr_user_id;
+    $new_entity->field_nombre_track = $song->name;
+    $new_entity->field_id_track = $track_id;
+    $new_entity->save();
+    
     $output .= '<h2>You Rock Too!</h2>';
     $output .= '<p>';
-    $output .= 'The song ' . $song . ' has been submitted.';
+    $output .= 'The song ' . $song->name . ' has been submitted.';
     $output .= '</p>';
     $output .= '<p>';
     $output .= 'Your song is number ' . $track_num . ' .';
     $output .= '</p>';
-  } catch (Exception $e) {
+  } 
+  catch (Exception $e) {
     $output .= '<h4>' . 'API Error: ' . $e->getCode() . '</h4>';
   }
-  /*
-   * API SETTING END
-   */
+//  catch (EntityMetadataWrapperException $e) {
+//    $output .= '<p>' . $e . '</p>';
+//  }
   
   return $output;
 }

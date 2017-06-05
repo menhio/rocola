@@ -5,7 +5,7 @@
     <input class="form-control" ng-model="query" 
            type="text" id="buscarInput" placeholder="Buscar"/>
   </div>
-  <div class="col-sm-6 col-md-6" ng-repeat="track in tracks | filter:query">
+  <div class="col-sm-12 col-md-6" ng-repeat="track in tracks | filter:query">
     <div class="thumbnail">
       <a ng-href="queue/{{track.user_id}}/{{track.playlist_id_queue}}/{{track.track_id}}">
         <img src="{{track.album_img}}" class="img-responsive center-block img-thumbnail" 

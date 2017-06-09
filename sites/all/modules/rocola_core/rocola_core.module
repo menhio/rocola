@@ -256,10 +256,14 @@ function queue_page($user_id, $playlist_id, $track_id) {
   }
   
   /*
-   * User must be able to only add a song every certain minutes
-   * Code goes here
+   * Get the lastest track and date of current user
    */
-  try {
+  $minutes_allowed = 30;
+  $epoch_created = _getLatestTrack($dr_user_id);
+  $last_created = date('H:i:s d-m-Y', $epoch_created);
+  if (time() - $epoch_created > $minutes_allowed * 60) {
+    // 30 mins has passed
+    try {
     $track = $api->addUserPlaylistTracks(
         $user_id, 
         $playlist_id, 
@@ -268,36 +272,58 @@ function queue_page($user_id, $playlist_id, $track_id) {
     /*
      * Log the Track
      */
-    $values = array(
-      'type' => 'tracks',
-      'uid' => $dr_user_id,
-      'status' => 1,
-      'comment' => 0,
-      'promote' => 0,
-    );
-    $new_node = entity_create('node', $values);
+      $values = array(
+        'type' => 'tracks',
+        'uid' => $dr_user_id,
+        'status' => 1,
+        'comment' => 0,
+        'promote' => 0,
+      );
+      $new_node = entity_create('node', $values);
 
-    $new_entity = entity_metadata_wrapper('node', $new_node);
-    $new_entity->field_fecha_track = strtotime($today);
-    $new_entity->field_user_track = $dr_user_id;
-    $new_entity->field_nombre_track = $song->name;
-    $new_entity->field_id_track = $track_id;
-    $new_entity->save();
-    
-    $output .= '<h2>You Rock Too!</h2>';
-    $output .= '<p>';
-    $output .= 'The song ' . $song->name . ' has been submitted.';
-    $output .= '</p>';
-    $output .= '<p>';
-    $output .= 'Your song is number ' . $track_num . ' .';
-    $output .= '</p>';
-  } 
-  catch (Exception $e) {
-    $output .= '<h4>' . 'API Error: ' . $e->getCode() . '</h4>';
+      $new_entity = entity_metadata_wrapper('node', $new_node);
+      $new_entity->field_fecha_track = strtotime($today);
+      $new_entity->field_user_track = $dr_user_id;
+      $new_entity->field_nombre_track = $song->name;
+      $new_entity->field_id_track = $track_id;
+      $new_entity->save();
+
+      $output .= '<h2>You Rock Too!</h2>';
+      $output .= '<p>';
+      $output .= 'The song ' . $song->name . ' has been submitted.';
+      $output .= '</p>';
+      $output .= '<p>';
+      $output .= 'Your song is number ' . $track_num . ' .';
+      $output .= '</p>';
+    } 
+    catch (Exception $e) {
+      $output .= '<h4>' . 'API Error: ' . $e->getCode() . '</h4>';
+    }
+  //  catch (EntityMetadataWrapperException $e) {
+  //    $output .= '<p>' . $e . '</p>';
+  //  }
+
   }
-//  catch (EntityMetadataWrapperException $e) {
-//    $output .= '<p>' . $e . '</p>';
-//  }
+  else {
+    $output .= '<p>' . 'Solo puedes programar una canción cada ' . $minutes_allowed . 
+        ' minutos y tu última canción programa fue ' . $last_created . 
+        '. Por favor intentar un poco mas tarde!' . '</p>';
+  }
   
   return $output;
+}
+
+function _getLatestTrack($uid) {
+  $query = db_select('node', 'n');
+  $query->addField('n', 'nid', 'nid');
+  $query->addField('n', 'uid', 'uid');
+  $query->addField('n', 'type', 'type');
+  $query->addField('n', 'created', 'created');
+  $query->condition('n.uid', $uid, '=');
+  $query->orderBy('nid', 'DESC');
+  $query->range(0, 1);
+  $result = $query->execute();
+  $results = $result->fetchAll();
+  
+  return $results[0]->created;
 }

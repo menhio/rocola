@@ -88,6 +88,13 @@ function rocola_core_form($form, &$form_state){
     '#default_value' => variable_get('spotify_playlist_id_queue' ,''),
   );
   
+  $form['minutes_allowed'] = array(
+    '#title' => t('Minutes Allowed'),
+    '#description' => t('The number of minutes a user has to wait to add another song.'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('minutes_allowed' ,''),
+  );
+  
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
@@ -103,6 +110,7 @@ function rocola_core_form_submit($form, &$form_state) {
   variable_set('spotify_user_id', $form_state['values']['user_id']);
   variable_set('spotify_playlist_id_selection', $form_state['values']['playlist_id_selection']);
   variable_set('spotify_playlist_id_queue', $form_state['values']['playlist_id_queue']);
+  variable_set('minutes_allowed', $form_state['values']['minutes_allowed']);
   
   drupal_set_message(t('Your configuration has been saved.'));
   
@@ -258,7 +266,7 @@ function queue_page($user_id, $playlist_id, $track_id) {
   /*
    * Get the lastest track and date of current user
    */
-  $minutes_allowed = 30;
+  $minutes_allowed = variable_get('minutes_allowed');
   $epoch_created = _getLatestTrack($dr_user_id);
   $last_created = date('H:i:s d-m-Y', $epoch_created);
   if (time() - $epoch_created > $minutes_allowed * 60) {

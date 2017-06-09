@@ -90,6 +90,7 @@ function rocola_core_form($form, &$form_state){
   
   $form['minutes_allowed'] = array(
     '#title' => t('Minutes Allowed'),
+    '#required' => TRUE,
     '#description' => t('The number of minutes a user has to wait to add another song.'),
     '#type' => 'textfield',
     '#default_value' => variable_get('minutes_allowed' ,''),
@@ -103,6 +104,22 @@ function rocola_core_form($form, &$form_state){
   return $form;
 }
 
+/** 
+ * Implements hook_validate().
+ */
+function rocola_core_form_validate($form, &$form_state) {
+  $min_allowed = $form_state['values']['minutes_allowed'];
+  if (!is_numeric($min_allowed)) {
+    form_set_error('minutes_allowed', t('Field must be numeric.'));
+  }
+  if ($min_allowed < 1 || $min_allowed > 60) {
+    form_set_error('minutes_allowed', t('Please enter a number between 1 and 60.'));
+  }
+}
+
+/*
+ * Implements hook_form_submit()
+ */
 function rocola_core_form_submit($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
   variable_set('spotify_client_id', $form_state['values']['client_id']);
